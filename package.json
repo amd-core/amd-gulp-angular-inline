@@ -1,0 +1,27 @@
+{
+  "name": "amd-gulp-angular-inline",
+  "version": "0.1.0",
+  "description": "A Gulp plugin which inlines HTML and CSS on Angular components.",
+  "main": "index.js",
+  "dependencies": {
+    "through2": "^2.0.3"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  },
+  "peerDependencies": {
+    "gulp": "^3.9.1"
+  },
+  "contributors": [
+    {
+      "name": "Nathan Mc Grath",
+      "email": "contact@nathan-mcgrath.com",
+      "url": "http://nathan-mcgrath.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amd-core/amd-gulp-angular-inline.git"
+  },
+  "license": "MIT"
+}
