@@ -1,5 +1,11 @@
 const fs = require('fs');
 
+function shortenContent(content) {
+  return content
+    .replace(/([\n\r]\s*)+/gm, ' ')
+    .replace(/"/g, '\\"');
+}
+
 /**
  * Inline resources from a string content.
  * @param content {string} The source file's content.
@@ -26,14 +32,14 @@ function inlineResourcesFromString(content, urlResolver) {
  * @return {string} The content with all templates inlined.
  */
 function inlineTemplate(content, urlResolver) {
-  return content.replace(/templateUrl:\s*'([^']+?\.html)'/g, function (m, templateUrl) {
-    const templateFile = urlResolver(templateUrl);
-    const templateContent = fs.readFileSync(templateFile, 'utf-8');
-    const shortenedTemplate = templateContent
-      .replace(/([\n\r]\s*)+/gm, ' ')
-      .replace(/"/g, '\\"');
-    return `template: "${shortenedTemplate}"`;
-  });
+  return content.replace(/(")?templateUrl(")?:\s*('|")([^']+?\.html)('|")/g,
+    (match, quote1, quote2, quote3, templateUrl) => {
+
+      const templateFile = urlResolver(templateUrl);
+      const templateContent = fs.readFileSync(templateFile, 'utf-8');
+
+      return `${quote1 || ''}template${quote2 || ''}: "${shortenContent(templateContent)}"`;
+    });
 }
 
 /**
@@ -44,20 +50,22 @@ function inlineTemplate(content, urlResolver) {
  * @return {string} The content with all styles inlined.
  */
 function inlineStyle(content, urlResolver) {
-  return content.replace(/styleUrls:\s*(\[[\s\S]*?\])/gm, function (m, styleUrls) {
-    const urls = eval(styleUrls);
-    return 'styles: ['
-      + urls.map(styleUrl => {
-        const styleFile = urlResolver(styleUrl);
-        const styleContent = fs.readFileSync(styleFile, 'utf-8');
-        const shortenedStyle = styleContent
-          .replace(/([\n\r]\s*)+/gm, ' ')
-          .replace(/"/g, '\\"');
-        return `"${shortenedStyle}"`;
-      })
-        .join(',\n')
-      + ']';
-  });
+  return content.replace(/(")?styleUrls(")?:\s*(\[[\s\S]*?\])/gm,
+    (match, quote1, quote2, styleUrls) => {
+      console.log(quote1, quote2, styleUrls);
+
+      const urls = eval(styleUrls);
+      return `${quote1 || ''}styles${quote2 || ''}: [`
+        + urls.map((styleUrl) => {
+        
+          const styleFile = urlResolver(styleUrl);
+          const styleContent = fs.readFileSync(styleFile, 'utf-8');
+        
+          return `"${shortenContent(styleContent)}"`;
+        })
+          .join(',\n')
+        + ']';
+    });
 }
 
 /**
@@ -66,7 +74,7 @@ function inlineStyle(content, urlResolver) {
  * @returns {string} The content with all moduleId: mentions removed.
  */
 function removeModuleId(content) {
-  return content.replace(/\s*moduleId:\s*module\.id\s*,?\s*/gm, '');
+  return content.replace(/\s*"?moduleId"?:\s*module\.id\s*,?\s*/gm, '');
 }
 
 module.exports = inlineResourcesFromString;
