@@ -1,4 +1,4 @@
-# AMD Gulp Angular Inline #
+# Gulp Angular Inline #
 
 ## Overview ##
 
@@ -72,6 +72,6 @@ export class HelloWorldComponent {
 
 ## Todo ##
 
-[ ] Support HTML minifier
-[ ] Support CSS minifier
-[ ] Support preprocessors for LESS & CSS support
+- [ ] Support HTML minifier
+- [ ] Support CSS minifier
+- [ ] Support preprocessors for LESS & CSS support
