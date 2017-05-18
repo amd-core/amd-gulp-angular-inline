@@ -18,12 +18,22 @@ $ npm install --save-dev @amd-core/gulp-angular-inline
 
 #### gulpfile.js ####
 ``` javascript
+const path = require('path');
 const gulp = require('gulp');
 const angularInline = require('@amd-core/gulp-angular-inline');
 
+// parse Angular TypeScript component files,
+// the following globs will also work:
+// **/*.component.js
+// **/*.ts
+// **/*.js
+// **/*metadata.json
 gulp.task('default', () => {
-  gulp.src('./src/**/*.ts')
-    .pipe(angularInline())
+  gulp.src('./src/**/*.component.ts')
+    .pipe(angularInline({
+      basePath: path.resolve('src'), // basePath is required
+      fileExts: ['html', 'css'] // optional, this is the default
+    }))
     .pipe(gulp.dest('./build'));
 });
 

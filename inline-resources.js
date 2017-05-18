@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 function shortenContent(content) {
   return content
@@ -12,7 +13,7 @@ function shortenContent(content) {
  * @param urlResolver {Function} A resolver that takes a URL and return a path.
  * @returns {string} The content with resources inlined.
  */
-function inlineResourcesFromString(content, urlResolver) {
+function inlineResourcesFromString(content, componentResources) {
 
   // Curry through the inlining functions.
   return [
@@ -20,7 +21,7 @@ function inlineResourcesFromString(content, urlResolver) {
     inlineStyle,
     removeModuleId
   ].reduce((content, fn) => {
-    return fn(content, urlResolver);
+    return fn(content, componentResources);
   }, content);
 }
 
@@ -31,12 +32,13 @@ function inlineResourcesFromString(content, urlResolver) {
  * @param urlResolver {Function} A resolver that takes a URL and return a path.
  * @return {string} The content with all templates inlined.
  */
-function inlineTemplate(content, urlResolver) {
+function inlineTemplate(content, componentResources) {
   return content.replace(/(")?templateUrl(")?:\s*('|")([^']+?\.html)('|")/g,
     (match, quote1, quote2, quote3, templateUrl) => {
 
-      const templateFile = urlResolver(templateUrl);
-      const templateContent = fs.readFileSync(templateFile, 'utf-8');
+      const normalizedTemplateUrl = path.normalize(templateUrl);
+      const absoluteTemplateUrl = componentResources.get(normalizedTemplateUrl);
+      const templateContent = fs.readFileSync(absoluteTemplateUrl, 'utf-8');
 
       return `${quote1 || ''}template${quote2 || ''}: "${shortenContent(templateContent)}"`;
     });
@@ -49,7 +51,7 @@ function inlineTemplate(content, urlResolver) {
  * @param content {string} The source file's content.
  * @return {string} The content with all styles inlined.
  */
-function inlineStyle(content, urlResolver) {
+function inlineStyle(content, componentResources) {
   return content.replace(/(")?styleUrls(")?:\s*(\[[\s\S]*?\])/gm,
     (match, quote1, quote2, styleUrls) => {
       console.log(quote1, quote2, styleUrls);
@@ -57,10 +59,11 @@ function inlineStyle(content, urlResolver) {
       const urls = eval(styleUrls);
       return `${quote1 || ''}styles${quote2 || ''}: [`
         + urls.map((styleUrl) => {
-        
-          const styleFile = urlResolver(styleUrl);
-          const styleContent = fs.readFileSync(styleFile, 'utf-8');
-        
+
+          const normalizedStyleUrl = path.normalize(styleUrl);
+          const absoluteStyleUrl = componentResources.get(normalizedStyleUrl);
+          const styleContent = fs.readFileSync(absoluteStyleUrl, 'utf-8');
+
           return `"${shortenContent(styleContent)}"`;
         })
           .join(',\n')

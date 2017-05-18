@@ -4,6 +4,8 @@
   "description": "A Gulp plugin which inlines HTML and CSS on Angular components.",
   "main": "index.js",
   "dependencies": {
+    "glob": "^7.1.1",
+    "gulp-util": "^3.0.8",
     "through2": "^2.0.3"
   },
   "devDependencies": {
