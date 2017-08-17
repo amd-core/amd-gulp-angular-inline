@@ -54,8 +54,6 @@ function inlineTemplate(content, componentResources) {
 function inlineStyle(content, componentResources) {
   return content.replace(/(")?styleUrls(")?:\s*(\[[\s\S]*?\])/gm,
     (match, quote1, quote2, styleUrls) => {
-      console.log(quote1, quote2, styleUrls);
-
       const urls = eval(styleUrls);
       return `${quote1 || ''}styles${quote2 || ''}: [`
         + urls.map((styleUrl) => {
