@@ -3,6 +3,10 @@
   "version": "0.3.0",
   "description": "A Gulp plugin which inlines HTML and CSS on Angular components.",
   "main": "index.js",
+  "scripts": {
+    "demo:source": "cd demo && gulp source",
+    "demo:metadata": "cd demo && gulp metadata"
+  },
   "dependencies": {
     "glob": "^7.1.1",
     "gulp-util": "^3.0.8",
