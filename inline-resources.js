@@ -14,8 +14,15 @@ function shortenContent(content) {
  * @returns {string} The content with resources inlined.
  */
 function inlineResourcesFromString(content, componentResources, transpilers, callback) {
-  return [inlineTemplate, inlineStyle, removeModuleId]
-    .reduce((content, fn) => fn(content, componentResources, transpilers, callback), content);
+  inlineTemplate(content, componentResources, transpilers)
+    .then((inlineTemplateContent) => {
+      return inlineStyle(inlineTemplateContent, componentResources, transpilers);
+    }).then((inlineStyleContent) => {
+      let finalContent = removeModuleId(inlineStyleContent);
+      callback(finalContent);
+    }).catch((err) => {
+      console.error('ERROR', err);
+    });
 }
 
 /**
@@ -25,7 +32,7 @@ function inlineResourcesFromString(content, componentResources, transpilers, cal
  * @param urlResolver {Function} A resolver that takes a URL and return a path.
  * @return {string} The content with all templates inlined.
  */
-function inlineTemplate(content, componentResources, transpilers, callback) {
+function inlineTemplate(content, componentResources, transpilers) {
 
   let result = content.replace(/(")?templateUrl(")?:\s*('|")([^']+?\.html)('|")/g,
     (match, quote1, quote2, quote3, templateUrl) => {
@@ -37,7 +44,7 @@ function inlineTemplate(content, componentResources, transpilers, callback) {
       return `${quote1 || ''}template${quote2 || ''}: "${shortenContent(templateContent)}"`;
     });
 
-  callback(result);
+  return Promise.resolve(result);
 }
 
 /**
@@ -47,27 +54,30 @@ function inlineTemplate(content, componentResources, transpilers, callback) {
  * @param content {string} The source file's content.
  * @return {string} The content with all styles inlined.
  */
-function inlineStyle(content, componentResources, transpilers, callback) {
-  let result = content.replace(/(")?styleUrls(")?:\s*(\[[\s\S]*?\])/gm,
-    (match, quote1, quote2, styleUrls) => {
+function inlineStyle(content, componentResources, transpilers) {
+  let regExp = new RegExp(/(")?styleUrls(")?:\s*(\[[\s\S]*?\])/, 'gm');
 
-      const urls = eval(styleUrls);
+  if (!regExp.test(content)) {
+    return Promise.resolve(content);
+  }
 
-      let transpilationPromises = [];
+  let urls = eval(content.match(regExp));
+  let transpilationPromises = [];
 
-      urls.forEach((styleUrl) => {
-        const normalizedStyleUrl = path.normalize(styleUrl);
-        const ext = path.extname(normalizedStyleUrl);
-        const absoluteStyleUrl = componentResources.get(normalizedStyleUrl);
-        const styleContent = fs.readFileSync(absoluteStyleUrl, 'utf-8');
+  urls.forEach((styleUrl) => {
+    styleUrl = styleUrl.split('[\'')[1].split('\']')[0];
 
-        transpilationPromises.push(transpile(styleContent, transpilers, ext));
-      });
+    let normalizedStyleUrl = path.normalize(styleUrl);
+    let ext = path.extname(normalizedStyleUrl);
+    let absoluteStyleUrl = componentResources.get(normalizedStyleUrl);
+    let styleContent = fs.readFileSync(absoluteStyleUrl, 'utf-8');
 
-      Promise.all(transpilationPromises).then((results) => {
-        return callback(`${quote1 || ''}styles${quote2 || ''}: [${results.join(',\n')}]`)
-      });
-    });
+    transpilationPromises.push(transpile(styleContent, transpilers, ext));
+  });
+
+  return Promise.all(transpilationPromises).then((results) => {
+    return Promise.resolve(content.replace(regExp, `"styles": [${results.join(',\n')}]`));
+  });
 }
 
 /**
@@ -80,18 +90,16 @@ function removeModuleId(content) {
 }
 
 function transpile(source, transpilers, ext) {
-  const transpiler = transpilers[ext];
+  const transpilerFunction = transpilers[ext];
 
-  return new Promise((resolve, reject) => {
-    if (!transpile) {
-      return resolve(source);
-    }
+  if (!transpilerFunction) {
+    return Promise.resolve(source);
+  }
 
-    transpiler(source, (transpilationResult) => {
-      let minifiedResult = shortenContent(transpilationResult);
+  transpilerFunction(source, (transpilationResult) => {
+    let minifiedResult = shortenContent(transpilationResult);
 
-      resolve(minifiedResult);
-    });
+    return Promise.resolve(minifiedResult);
   });
 }
 
