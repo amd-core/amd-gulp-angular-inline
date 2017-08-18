@@ -65,7 +65,13 @@ function inlineStyle(content, componentResources, transpilers) {
   let transpilationPromises = [];
 
   urls.forEach((styleUrl) => {
-    styleUrl = styleUrl.split('[\'')[1].split('\']')[0];
+    if (/['\s']/.test(styleUrl)) {
+      styleUrl = styleUrl.split('[\'')[1].split('\']')[0];
+    } else if (/["\s"]/.test(styleUrl)) {
+      styleUrl = styleUrl.split('["')[1].split('"]')[0];
+    } else {
+      console.error('noQuotes');
+    }
 
     let normalizedStyleUrl = path.normalize(styleUrl);
     let ext = path.extname(normalizedStyleUrl);
