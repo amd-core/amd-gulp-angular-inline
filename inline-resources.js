@@ -90,16 +90,18 @@ function removeModuleId(content) {
 }
 
 function transpile(source, transpilers, ext) {
-  const transpilerFunction = transpilers[ext];
+  return new Promise((resolve, reject) => {
+    const transpilerFunction = transpilers[ext];
 
-  if (!transpilerFunction) {
-    return Promise.resolve(source);
-  }
+    if (!transpilerFunction) {
+      return resolve(source);
+    }
 
-  transpilerFunction(source, (transpilationResult) => {
-    let minifiedResult = shortenContent(transpilationResult);
+    transpilerFunction(source, (transpilationResult) => {
+      let minifiedResult = shortenContent(transpilationResult);
 
-    return Promise.resolve(minifiedResult);
+      return resolve(JSON.stringify(minifiedResult));
+    });
   });
 }
 
