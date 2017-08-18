@@ -6,10 +6,6 @@ const util = require('gulp-util');
 
 const inlineResources = require('./inline-resources');
 
-const parse = (fileContents, componentResources) => {
-  return inlineResources(fileContents, componentResources);
-}
-
 module.exports = (options) => {
   options = options || {};
 
@@ -38,16 +34,11 @@ module.exports = (options) => {
     });
 
   return through.obj((file, encoding, callback) => {
-    const transpile = transpilers[path.extname(file.path)];
-
-    if (transpile) {
-      transpile(file.contents.toString(), (transpilationResult) => {
-        file.contents = new Buffer(parse(transpilationResult, componentResources));
+    inlineResources(
+      file.contents.toString(), componentResources, transpilers,
+      (result) => {
+        file.contents = new Buffer(result);
         callback(null, file);
       });
-    } else {
-      file.contents = new Buffer(parse(file.contents.toString(), componentResources));
-      callback(null, file);
-    }
   });
 };

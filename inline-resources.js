@@ -13,16 +13,9 @@ function shortenContent(content) {
  * @param urlResolver {Function} A resolver that takes a URL and return a path.
  * @returns {string} The content with resources inlined.
  */
-function inlineResourcesFromString(content, componentResources) {
-
-  // Curry through the inlining functions.
-  return [
-    inlineTemplate,
-    inlineStyle,
-    removeModuleId
-  ].reduce((content, fn) => {
-    return fn(content, componentResources);
-  }, content);
+function inlineResourcesFromString(content, componentResources, transpilers, callback) {
+  return [inlineTemplate, inlineStyle, removeModuleId]
+    .reduce((content, fn) => fn(content, componentResources, transpilers, callback), content);
 }
 
 /**
@@ -32,8 +25,9 @@ function inlineResourcesFromString(content, componentResources) {
  * @param urlResolver {Function} A resolver that takes a URL and return a path.
  * @return {string} The content with all templates inlined.
  */
-function inlineTemplate(content, componentResources) {
-  return content.replace(/(")?templateUrl(")?:\s*('|")([^']+?\.html)('|")/g,
+function inlineTemplate(content, componentResources, transpilers, callback) {
+
+  let result = content.replace(/(")?templateUrl(")?:\s*('|")([^']+?\.html)('|")/g,
     (match, quote1, quote2, quote3, templateUrl) => {
 
       const normalizedTemplateUrl = path.normalize(templateUrl);
@@ -42,6 +36,8 @@ function inlineTemplate(content, componentResources) {
 
       return `${quote1 || ''}template${quote2 || ''}: "${shortenContent(templateContent)}"`;
     });
+
+  callback(result);
 }
 
 /**
@@ -51,21 +47,26 @@ function inlineTemplate(content, componentResources) {
  * @param content {string} The source file's content.
  * @return {string} The content with all styles inlined.
  */
-function inlineStyle(content, componentResources) {
-  return content.replace(/(")?styleUrls(")?:\s*(\[[\s\S]*?\])/gm,
+function inlineStyle(content, componentResources, transpilers, callback) {
+  let result = content.replace(/(")?styleUrls(")?:\s*(\[[\s\S]*?\])/gm,
     (match, quote1, quote2, styleUrls) => {
+
       const urls = eval(styleUrls);
-      return `${quote1 || ''}styles${quote2 || ''}: [`
-        + urls.map((styleUrl) => {
 
-          const normalizedStyleUrl = path.normalize(styleUrl);
-          const absoluteStyleUrl = componentResources.get(normalizedStyleUrl);
-          const styleContent = fs.readFileSync(absoluteStyleUrl, 'utf-8');
+      let transpilationPromises = [];
 
-          return `"${shortenContent(styleContent)}"`;
-        })
-          .join(',\n')
-        + ']';
+      urls.forEach((styleUrl) => {
+        const normalizedStyleUrl = path.normalize(styleUrl);
+        const ext = path.extname(normalizedStyleUrl);
+        const absoluteStyleUrl = componentResources.get(normalizedStyleUrl);
+        const styleContent = fs.readFileSync(absoluteStyleUrl, 'utf-8');
+
+        transpilationPromises.push(transpile(styleContent, transpilers, ext));
+      });
+
+      Promise.all(transpilationPromises).then((results) => {
+        return callback(`${quote1 || ''}styles${quote2 || ''}: [${results.join(',\n')}]`)
+      });
     });
 }
 
@@ -76,6 +77,22 @@ function inlineStyle(content, componentResources) {
  */
 function removeModuleId(content) {
   return content.replace(/\s*"?moduleId"?:\s*module\.id\s*,?\s*/gm, '');
+}
+
+function transpile(source, transpilers, ext) {
+  const transpiler = transpilers[ext];
+
+  return new Promise((resolve, reject) => {
+    if (!transpile) {
+      return resolve(source);
+    }
+
+    transpiler(source, (transpilationResult) => {
+      let minifiedResult = shortenContent(transpilationResult);
+
+      resolve(minifiedResult);
+    });
+  });
 }
 
 module.exports = inlineResourcesFromString;
