@@ -27,8 +27,8 @@ function inlineResourcesFromString(content, componentResources, transpilers, cal
  * @return {string} The content with all templates inlined.
  */
 function inlineTemplate(content, componentResources, transpilers) {
-
-  let result = content.replace(/(")?templateUrl(")?:\s*('|")([^']+?\.html)('|")/g,
+  return new Promise((resolve) => {
+    content.replace(/(")?templateUrl(")?:\s*('|")([^']+?\.html)('|")/g,
     (match, quote1, quote2, quote3, templateUrl) => {
 
       const normalizedTemplateUrl = path.normalize(templateUrl);
@@ -37,9 +37,10 @@ function inlineTemplate(content, componentResources, transpilers) {
 
       return transpile(templateContent)
         .then((transpilationResult) => {
-          return Promise.resolve(`"template": "${transpilationResult}"`)
+          return resolve(`"template": "${transpilationResult}"`)
         });
     });
+  });
 }
 
 /**
