@@ -1,12 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-function shortenContent(content) {
-  return content
-    .replace(/([\n\r]\s*)+/gm, ' ')
-    .replace(/"/g, '\\"');
-}
-
 /**
  * Inline resources from a string content.
  * @param content {string} The source file's content.
@@ -41,10 +35,11 @@ function inlineTemplate(content, componentResources, transpilers) {
       const absoluteTemplateUrl = componentResources.get(normalizedTemplateUrl);
       const templateContent = fs.readFileSync(absoluteTemplateUrl, 'utf-8');
 
-      return `${quote1 || ''}template${quote2 || ''}: "${shortenContent(templateContent)}"`;
+      return transpile(templateContent)
+        .then((transpilationResult) => {
+          return Promise.resolve(`"template": "${transpilationResult}"`)
+        });
     });
-
-  return Promise.resolve(result);
 }
 
 /**
@@ -104,9 +99,7 @@ function transpile(source, transpilers, ext) {
     }
 
     transpilerFunction(source, (transpilationResult) => {
-      let minifiedResult = shortenContent(transpilationResult);
-
-      return resolve(JSON.stringify(minifiedResult));
+      return resolve(JSON.stringify(transpilationResult));
     });
   });
 }

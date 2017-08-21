@@ -1,6 +1,6 @@
 {
   "name": "@amd-core/gulp-angular-inline",
-  "version": "0.9.0",
+  "version": "0.11.0",
   "description": "A Gulp plugin which inlines HTML and CSS on Angular components.",
   "main": "index.js",
   "scripts": {
