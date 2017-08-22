@@ -70,31 +70,16 @@ function inlineResources(source) {
  * @param {string} source 
  */
 function inlineTemplates(source) {
-
-  if (!templateUrlRegex.test(source)) {
-    console.log('No templates to inline!');
-  }
-
   return new Promise((resolve, reject) => {
-    console.log('Inlining templates');
-
     return asyncReplace(source, templateUrlRegex,
       (match, group1, group2, group3, group4, done) => {
         let url = group1;
         let comma = group2;
 
-        console.log('Normal URL', url);
-
         return getContentForUrl(url)
-          .then((content) => {
-            console.log('Finished getting template content for url', content);
-            return done(null, `"template":"${content}"${comma}`);
-          }).catch((err) => {
-            console.error('Error getting template content', err);
-            return done(err);
-          });
+          .then((content) => done(null, `"template":"${content}"${comma}`))
+          .catch((err) => done(err));
       }, (err, result) => {
-        console.log('Finished inlining templates', err);
         if (err) {
           return reject(err);
         }
@@ -108,21 +93,9 @@ function inlineTemplates(source) {
  * @param {string} source 
  */
 function inlineStyles(source) {
-
-  if (!styleUrlsRegex.test(source)) {
-    console.log('No styles to inline!');
-  }
-
   return new Promise((resolve, reject) => {
-    console.log('Inlining styles');
-
     return asyncReplace(source, styleUrlsRegex,
       (match, group1, group2, group3, group4, done) => {
-        console.log('Group 1', group1);
-        console.log('Group 2', group2);
-        console.log('Group 3', group3);
-        console.log('Group 4', group4);
-
         let styleUrls = eval(group1);
         let comma = group2;
         let transpilationPromises = [];
@@ -132,15 +105,9 @@ function inlineStyles(source) {
         });
 
         return Promise.all(transpilationPromises)
-          .then((results) => {
-            console.log('Finished getting content for url');
-            return done(null, `"styles":["${results.join('","')}"]${comma}`);
-          }).catch((err) => {
-            console.error('Error getting style content', err);
-            return done(err);
-          });
+          .then((results) => done(null, `"styles":["${results.join('","')}"]${comma}`))
+          .catch((err) => done(err));
       }, (err, result) => {
-        console.log('Finished inlining styles', err);
         if (err) {
           return reject(err);
         }
@@ -185,8 +152,6 @@ module.exports = (options) => {
       .then((result) => {
         file.contents = new Buffer(result);
         return callback(null, file);
-      }).catch((err) => {
-        return callback(err);
-      });
+      }).catch((err) => callback(err));
   });
 };
