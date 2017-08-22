@@ -135,7 +135,7 @@ function getContentForUrl(url) {
       }
 
       return transpilerFunction(content, (result) => {
-        return resolve(result);
+        return resolve(result.replace(/"/g, '\\"'));
       });
     } catch (err) {
       return reject(err);
