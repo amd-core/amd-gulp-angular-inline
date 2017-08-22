@@ -16,7 +16,8 @@
             "arguments": [
               {
                 "selector": "hello-world",
-                "templateUrl": "./hello-world.component.html"
+                "templateUrl": "./hello-world.component.html",
+                "styleUrls": ["./hello-world.component.scss"]
               }
             ]
           }
@@ -53,7 +54,8 @@
             "arguments": [
               {
                 "selector": "hello-world",
-                "templateUrl": "./hello-world.component.html"
+                "templateUrl": "./hello-world.component.html",
+                "styleUrls": ["./hello-world.component.scss"]
               }
             ]
           }
